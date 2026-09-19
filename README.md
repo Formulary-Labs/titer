@@ -1,6 +1,6 @@
 # titer
 
-Control coverage matrix for compliance programs.
+How much of your control catalog actually has evidence behind it? `titer` computes that number by family, surfaces the gaps, and tells you what's not applicable so it doesn't inflate the count.
 
 ```bash
 go get github.com/Formulary-Labs/titer
@@ -9,8 +9,6 @@ go get github.com/Formulary-Labs/titer
 ## What it does
 
 `titer` reads a gemara `ControlCatalog` and an optional SOA CSV, then computes a `CoverageMatrix` — a structured snapshot of what is evidenced, implemented, gapped, or not applicable across every control family. The same computation works for any framework represented in the gemara schema: ISO 27001, ISO 42001, IEC 62443, or any custom catalog.
-
-The name is precise: a titer is a quantitative concentration measurement. `titer` measures how much of your control catalog has evidence behind it.
 
 ## Usage
 
