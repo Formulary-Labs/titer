@@ -100,6 +100,10 @@ Produces a summary metrics block followed by a per-family table and the three ga
 | Owner gap | Control has no assigned responsible party | Assign owner; log risk in `specimen` (`source: owner_gap`) |
 | Evidence gap | Control is implemented but no evidence artifact is linked | Collect and link evidence |
 
+## Catalogs
+
+`titer` reads a gemara `ControlCatalog` YAML to compute the coverage matrix. See [CATALOGS.md](https://github.com/Formulary-Labs/.github/blob/main/CATALOGS.md) for known upstream catalog sources and guidance on authoring your own.
+
 ## Pipeline context
 
 `titer` runs after `assay` produces an assessment result (which is the most complete source for implementation status). It is also useful earlier in a cycle as a lightweight coverage snapshot from just a SOA CSV and evidence map, before a full assessment run.
