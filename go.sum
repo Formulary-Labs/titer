@@ -1,3 +1,5 @@
+github.com/Formulary-Labs/substrate v0.1.0 h1:5qJdo8sR30ZNrxKv8XR3HrFJv5KoxxqqJFmsCOAiTYA=
+github.com/Formulary-Labs/substrate v0.1.0/go.mod h1:wyBMH0xWStrpmAl0l4ArFdy9wooCjxK7uJNl4CGIL00=
 github.com/gemaraproj/go-gemara v0.10.0 h1:di5L49r6QdgjDlxsSTh3Y2VJHpvMnO/lv4o5MteITd4=
 github.com/gemaraproj/go-gemara v0.10.0/go.mod h1:f2Z92OdIEsxvt6LYud/qxJ0gSRGsZUD6pv+epM2Iytw=
 github.com/goccy/go-yaml v1.19.2 h1:PmFC1S6h8ljIz6gMRBopkjP1TVT7xuwrButHID66PoM=
