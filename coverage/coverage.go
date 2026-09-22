@@ -435,6 +435,7 @@ func gapPriority(severity string) string {
 func ExportedComputeTotals(families []FamilyCoverage) Totals {
 	return computeTotals(families)
 }
+
 // ToJSON serializes the CoverageMatrix to indented JSON.
 func (m *CoverageMatrix) ToJSON() ([]byte, error) {
 	return json.MarshalIndent(m, "", "  ")
