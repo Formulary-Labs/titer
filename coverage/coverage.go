@@ -22,8 +22,8 @@ import (
 	"github.com/Formulary-Labs/substrate/artifact"
 )
 
-// CoverageStatus represents the coverage state of a single control. //nolint:revive // stutter is intentional
-type CoverageStatus string
+// CoverageStatus represents the coverage state of a single control.
+type CoverageStatus string //nolint:revive // stutter is intentional
 
 const (
 	// Evidenced means implementation is documented and evidence is available.
@@ -71,8 +71,8 @@ type Totals struct {
 	CoveragePct           *int `json:"coverage_pct"`
 }
 
-// CoverageMatrix is the full output of a titer run. //nolint:revive // stutter is intentional
-type CoverageMatrix struct {
+// CoverageMatrix is the full output of a titer run.
+type CoverageMatrix struct { //nolint:revive // stutter is intentional
 	Framework      string            `json:"framework"`
 	AssessmentDate string            `json:"assessment_date"`
 	Program        string            `json:"program"`
@@ -85,8 +85,8 @@ type CoverageMatrix struct {
 	EvidenceGaps   []EvidenceGap     `json:"evidence_gaps,omitempty"`
 }
 
-// CoverageGap describes a control with Gap status. //nolint:revive // stutter is intentional
-type CoverageGap struct {
+// CoverageGap describes a control with Gap status.
+type CoverageGap struct { //nolint:revive // stutter is intentional
 	ControlID   string `json:"control_id"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
@@ -416,7 +416,6 @@ func soaStatusToCoverage(s string) CoverageStatus {
 	}
 }
 
-// ExportedComputeTotals exposes computeTotals for testing.
 // gapPriority derives gap priority from control severity metadata.
 // Falls back to "medium" if severity is empty or unrecognized.
 func gapPriority(severity string) string {
@@ -432,6 +431,7 @@ func gapPriority(severity string) string {
 	}
 }
 
+// ExportedComputeTotals exposes computeTotals for package-external tests.
 func ExportedComputeTotals(families []FamilyCoverage) Totals {
 	return computeTotals(families)
 }
