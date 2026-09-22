@@ -90,7 +90,7 @@ type CoverageGap struct { //nolint:revive // stutter is intentional
 	ControlID   string  `json:"control_id"`
 	Title       string  `json:"title"`
 	Description string  `json:"description"`
-	Priority    string  `json:"priority"` // high, medium, low
+	Priority    string  `json:"priority"`      // high, medium, low
 	ALE         float64 `json:"ale,omitempty"` // Annualized Loss Expectancy in USD (from specimen risk register)
 }
 
