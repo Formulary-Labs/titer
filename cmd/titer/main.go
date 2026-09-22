@@ -24,15 +24,17 @@ const version = "0.1.0"
 
 func main() {
 	var (
-		catalogFlag  = flag.String("catalog", "", "Path to gemara ControlCatalog YAML (required)")
-		soaFlag      = flag.String("soa", "", "Path to CDG soa.csv file (optional)")
-		evidenceFlag = flag.String("evidence", "", "Path to JSON evidence map {control_id: description} (optional)")
-		ownerFlag    = flag.String("owners", "", "Path to JSON owner map {control_id: owner_name} (optional)")
-		programFlag  = flag.String("program", "", "Program slug for provenance logging")
-		fmtFlag      = flag.String("format", "json", "Output format: json (default), md, csv")
-		severityFlag = flag.String("severity", "", "Filter output to gaps of this severity: high, medium, low")
-		versionFlag  = flag.Bool("version", false, "Print version and exit")
-		quietFlag    = flag.Bool("quiet", false, "Suppress progress output")
+		catalogFlag      = flag.String("catalog", "", "Path to gemara ControlCatalog YAML (required)")
+		soaFlag          = flag.String("soa", "", "Path to CDG soa.csv file (optional)")
+		evidenceFlag     = flag.String("evidence", "", "Path to JSON evidence map {control_id: description} (optional)")
+		ownerFlag        = flag.String("owners", "", "Path to JSON owner map {control_id: owner_name} (optional)")
+		programFlag      = flag.String("program", "", "Program slug for provenance logging")
+		fmtFlag          = flag.String("format", "json", "Output format: json (default), md, csv")
+		severityFlag     = flag.String("severity", "", "Filter output to gaps of this severity: high, medium, low")
+		versionFlag      = flag.Bool("version", false, "Print version and exit")
+		quietFlag        = flag.Bool("quiet", false, "Suppress progress output")
+		riskRegisterFlag = flag.String("risk-register", "", "Path to specimen list JSON output for FAIR ALE cross-reference (optional)")
+		minExposureFlag  = flag.Float64("min-exposure-usd", 0, "Filter gaps to those with ALE >= this USD threshold (requires --risk-register)")
 	)
 	flag.Usage = usage
 	flag.Parse()
@@ -71,12 +73,24 @@ func main() {
 		}
 	}
 
+	// Load optional risk register for FAIR ALE cross-reference.
+	var aleMap map[string]float64
+	if *riskRegisterFlag != "" {
+		var err error
+		aleMap, err = loadALEMap(*riskRegisterFlag)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, `{"error": "loading risk register: %v", "code": 2}`+"\n", err)
+			os.Exit(exit.ToolError)
+		}
+	}
+
 	opts := coverage.Options{
 		Program:     *programFlag,
 		CatalogPath: *catalogFlag,
 		SOAPath:     *soaFlag,
 		EvidenceMap: evidenceMap,
 		OwnerMap:    ownerMap,
+		ALEMap:      aleMap,
 	}
 
 	if !*quietFlag {
@@ -92,6 +106,11 @@ func main() {
 	// Apply severity filter if requested.
 	if *severityFlag != "" {
 		matrix = filterBySeverity(matrix, *severityFlag)
+	}
+
+	// Apply FAIR exposure filter if requested.
+	if *minExposureFlag > 0 {
+		matrix = filterByMinExposure(matrix, *minExposureFlag)
 	}
 
 	switch f {
@@ -151,6 +170,49 @@ func filterBySeverity(m *coverage.CoverageMatrix, severity string) *coverage.Cov
 	return m
 }
 
+// filterByMinExposure retains only gaps whose ALE >= minUSD.
+// Gaps with no ALE data (ALE == 0) are excluded when a threshold is set,
+// because they cannot be verified to meet the financial bar.
+func filterByMinExposure(m *coverage.CoverageMatrix, minUSD float64) *coverage.CoverageMatrix {
+	var filtered []coverage.CoverageGap
+	for _, g := range m.CoverageGaps {
+		if g.ALE >= minUSD {
+			filtered = append(filtered, g)
+		}
+	}
+	m.CoverageGaps = filtered
+	return m
+}
+
+// loadALEMap reads a specimen list JSON output and builds a controlID → ALE map.
+// The specimen JSON format is: {"total": N, "risks": [...]} where each risk has
+// "control_id" and "ale" fields.
+func loadALEMap(path string) (map[string]float64, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("reading risk register %q: %w", path, err)
+	}
+	var payload struct {
+		Risks []struct {
+			ControlID string  `json:"control_id"`
+			ALE       float64 `json:"ale"`
+		} `json:"risks"`
+	}
+	if err := json.Unmarshal(data, &payload); err != nil {
+		return nil, fmt.Errorf("parsing risk register JSON: %w", err)
+	}
+	aleMap := make(map[string]float64, len(payload.Risks))
+	for _, r := range payload.Risks {
+		if r.ControlID != "" && r.ALE > 0 {
+			// Use the highest ALE when multiple risks map to the same control.
+			if existing := aleMap[r.ControlID]; r.ALE > existing {
+				aleMap[r.ControlID] = r.ALE
+			}
+		}
+	}
+	return aleMap, nil
+}
+
 func printCSV(m *coverage.CoverageMatrix) {
 	fmt.Println("control_id,title,family,status,owner,evidence")
 	for _, c := range m.Controls {
@@ -174,15 +236,17 @@ Usage:
   titer [flags] --catalog <catalog.yaml>
 
 Flags:
-  --catalog string    Path to gemara ControlCatalog YAML (required)
-  --soa string        Path to CDG soa.csv file (optional)
-  --evidence string   Path to JSON evidence map {control_id: description}
-  --owners string     Path to JSON owner map {control_id: owner_name}
-  --program string    Program slug for provenance logging
-  --format string     Output format: json (default), md, csv
-  --severity string   Filter gaps by priority: high, medium, low
-  --quiet             Suppress progress output
-  --version           Print version and exit
+  --catalog string           Path to gemara ControlCatalog YAML (required)
+  --soa string               Path to CDG soa.csv file (optional)
+  --evidence string          Path to JSON evidence map {control_id: description}
+  --owners string            Path to JSON owner map {control_id: owner_name}
+  --program string           Program slug for provenance logging
+  --format string            Output format: json (default), md, csv
+  --severity string          Filter gaps by priority: high, medium, low
+  --risk-register string     Path to specimen list JSON for FAIR ALE cross-reference
+  --min-exposure-usd float   Filter gaps by minimum ALE in USD (requires --risk-register)
+  --quiet                    Suppress progress output
+  --version                  Print version and exit
 
 Exit codes:
   0  No gaps (all controls evidenced or implemented)
@@ -193,6 +257,7 @@ Examples:
   titer --catalog catalog.yaml --format md
   titer --catalog catalog.yaml --soa soa.csv --program iso42001
   titer --catalog catalog.yaml --severity high --format md
+  titer --catalog catalog.yaml --risk-register data/iso42001/risks.json --min-exposure-usd 100000
 
 Pipe:
   assay --framework iso27001 --product docs/ | titer --catalog catalog.yaml`)

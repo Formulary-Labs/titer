@@ -87,10 +87,11 @@ type CoverageMatrix struct { //nolint:revive // stutter is intentional
 
 // CoverageGap describes a control with Gap status.
 type CoverageGap struct { //nolint:revive // stutter is intentional
-	ControlID   string `json:"control_id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Priority    string `json:"priority"` // high, medium, low
+	ControlID   string  `json:"control_id"`
+	Title       string  `json:"title"`
+	Description string  `json:"description"`
+	Priority    string  `json:"priority"` // high, medium, low
+	ALE         float64 `json:"ale,omitempty"` // Annualized Loss Expectancy in USD (from specimen risk register)
 }
 
 // OwnerGap describes a control with no assigned owner.
@@ -117,6 +118,7 @@ type Options struct {
 	EvidenceMap     map[string]string         // control_id → evidence description
 	OwnerMap        map[string]string         // control_id → owner name
 	StatusOverrides map[string]CoverageStatus // control_id → explicit status
+	ALEMap          map[string]float64        // control_id → ALE in USD (from specimen risk register)
 }
 
 // Compute reads the catalog and evidence sources and produces a CoverageMatrix.
@@ -148,7 +150,7 @@ func Compute(opts Options) (*CoverageMatrix, error) {
 	totals := computeTotals(families)
 
 	// Gap analysis.
-	cGaps, oGaps, eGaps := analyzeGaps(controls)
+	cGaps, oGaps, eGaps := analyzeGaps(controls, opts.ALEMap)
 
 	basis := []string{opts.CatalogPath}
 	if opts.SOAPath != "" {
@@ -273,7 +275,9 @@ func computeTotals(families []FamilyCoverage) Totals {
 }
 
 // analyzeGaps produces the three gap lists from control-level coverage.
-func analyzeGaps(controls []ControlCoverage) ([]CoverageGap, []OwnerGap, []EvidenceGap) {
+// aleMap optionally provides Annualized Loss Expectancy (USD) keyed by control ID,
+// sourced from a specimen risk register; zero or absent means no FAIR data.
+func analyzeGaps(controls []ControlCoverage, aleMap map[string]float64) ([]CoverageGap, []OwnerGap, []EvidenceGap) {
 	var cGaps []CoverageGap
 	var oGaps []OwnerGap
 	var eGaps []EvidenceGap
@@ -281,12 +285,16 @@ func analyzeGaps(controls []ControlCoverage) ([]CoverageGap, []OwnerGap, []Evide
 	for _, c := range controls {
 		switch c.Status {
 		case Gap:
-			cGaps = append(cGaps, CoverageGap{
+			gap := CoverageGap{
 				ControlID:   c.ID,
 				Title:       c.Title,
 				Description: "Control not implemented or insufficient data",
 				Priority:    gapPriority(c.Severity),
-			})
+			}
+			if aleMap != nil {
+				gap.ALE = aleMap[c.ID]
+			}
+			cGaps = append(cGaps, gap)
 		case ImplementedNoEvidence:
 			eGaps = append(eGaps, EvidenceGap{
 				ControlID:     c.ID,
