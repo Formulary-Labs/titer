@@ -71,8 +71,13 @@ type Totals struct {
 	CoveragePct           *int `json:"coverage_pct"`
 }
 
+// CoverageMatrixSchemaVersion is the current schema version written to all
+// CoverageMatrix outputs. Increment when fields are removed or renamed.
+const CoverageMatrixSchemaVersion = "1.0"
+
 // CoverageMatrix is the full output of a titer run.
 type CoverageMatrix struct { //nolint:revive // stutter is intentional
+	SchemaVersion  string            `json:"schema_version"`
 	Framework      string            `json:"framework"`
 	AssessmentDate string            `json:"assessment_date"`
 	Program        string            `json:"program"`
@@ -158,6 +163,7 @@ func Compute(opts Options) (*CoverageMatrix, error) {
 	}
 
 	return &CoverageMatrix{
+		SchemaVersion:  CoverageMatrixSchemaVersion,
 		Framework:      catalog.Metadata.Id,
 		AssessmentDate: time.Now().UTC().Format("2006-01-02"),
 		Program:        opts.Program,
