@@ -22,7 +22,7 @@ import (
 	"github.com/Formulary-Labs/substrate/artifact"
 )
 
-// CoverageStatus represents the coverage state of a single control.
+// CoverageStatus represents the coverage state of a single control. //nolint:revive // stutter is intentional
 type CoverageStatus string
 
 const (
@@ -45,19 +45,20 @@ type ControlCoverage struct {
 	Evidence       string         `json:"evidence,omitempty"`
 	Owner          string         `json:"owner,omitempty"`
 	Notes          string         `json:"notes,omitempty"`
+	Severity       string         `json:"severity,omitempty"` // from catalog tier/severity metadata
 	InferenceFlags []string       `json:"inference_flags,omitempty"`
 }
 
 // FamilyCoverage is the aggregate coverage for a control family or group.
 type FamilyCoverage struct {
-	Family               string  `json:"family"`
-	Total                int     `json:"total"`
-	Evidenced            int     `json:"evidenced"`
+	Family                string `json:"family"`
+	Total                 int    `json:"total"`
+	Evidenced             int    `json:"evidenced"`
 	ImplementedNoEvidence int    `json:"implemented_no_evidence"`
-	Gap                  int     `json:"gap"`
-	NotApplicable        int     `json:"not_applicable"`
-	CoveragePct          *int    `json:"coverage_pct"` // nil when denominator is 0
-	Owner                string  `json:"owner,omitempty"`
+	Gap                   int    `json:"gap"`
+	NotApplicable         int    `json:"not_applicable"`
+	CoveragePct           *int   `json:"coverage_pct"` // nil when denominator is 0
+	Owner                 string `json:"owner,omitempty"`
 }
 
 // Totals is the aggregate across all families.
@@ -70,7 +71,7 @@ type Totals struct {
 	CoveragePct           *int `json:"coverage_pct"`
 }
 
-// CoverageMatrix is the full output of a titer run.
+// CoverageMatrix is the full output of a titer run. //nolint:revive // stutter is intentional
 type CoverageMatrix struct {
 	Framework      string            `json:"framework"`
 	AssessmentDate string            `json:"assessment_date"`
@@ -84,7 +85,7 @@ type CoverageMatrix struct {
 	EvidenceGaps   []EvidenceGap     `json:"evidence_gaps,omitempty"`
 }
 
-// CoverageGap describes a control with Gap status.
+// CoverageGap describes a control with Gap status. //nolint:revive // stutter is intentional
 type CoverageGap struct {
 	ControlID   string `json:"control_id"`
 	Title       string `json:"title"`
@@ -101,20 +102,20 @@ type OwnerGap struct {
 
 // EvidenceGap describes a control that is implemented but not evidenced.
 type EvidenceGap struct {
-	ControlID    string `json:"control_id"`
-	Title        string `json:"title"`
-	WhatExists   string `json:"what_exists"`
-	WhatNeeded   string `json:"what_needed"`
+	ControlID     string `json:"control_id"`
+	Title         string `json:"title"`
+	WhatExists    string `json:"what_exists"`
+	WhatNeeded    string `json:"what_needed"`
 	EffortToClose string `json:"effort_to_close"` // low, medium, high
 }
 
 // Options configures a titer run.
 type Options struct {
-	Program        string
-	CatalogPath    string
-	SOAPath        string            // optional soa.csv from CDG
-	EvidenceMap    map[string]string // control_id → evidence description
-	OwnerMap       map[string]string // control_id → owner name
+	Program         string
+	CatalogPath     string
+	SOAPath         string                    // optional soa.csv from CDG
+	EvidenceMap     map[string]string         // control_id → evidence description
+	OwnerMap        map[string]string         // control_id → owner name
 	StatusOverrides map[string]CoverageStatus // control_id → explicit status
 }
 
@@ -284,14 +285,14 @@ func analyzeGaps(controls []ControlCoverage) ([]CoverageGap, []OwnerGap, []Evide
 				ControlID:   c.ID,
 				Title:       c.Title,
 				Description: "Control not implemented or insufficient data",
-				Priority:    "medium",
+				Priority:    gapPriority(c.Severity),
 			})
 		case ImplementedNoEvidence:
 			eGaps = append(eGaps, EvidenceGap{
-				ControlID:    c.ID,
-				Title:        c.Title,
-				WhatExists:   c.Evidence,
-				WhatNeeded:   "Documented evidence artifact",
+				ControlID:     c.ID,
+				Title:         c.Title,
+				WhatExists:    c.Evidence,
+				WhatNeeded:    "Documented evidence artifact",
 				EffortToClose: "low",
 			})
 		}
@@ -334,7 +335,7 @@ func loadSOA(path string) ([]soaRow, error) {
 	if err != nil {
 		return nil, fmt.Errorf("opening SOA CSV: %w", err)
 	}
-	defer f.Close()
+	defer f.Close() //nolint:errcheck // read-only CSV, close error is harmless
 
 	r := csv.NewReader(f)
 	headers, err := r.Read()
@@ -416,9 +417,25 @@ func soaStatusToCoverage(s string) CoverageStatus {
 }
 
 // ExportedComputeTotals exposes computeTotals for testing.
+// gapPriority derives gap priority from control severity metadata.
+// Falls back to "medium" if severity is empty or unrecognized.
+func gapPriority(severity string) string {
+	switch severity {
+	case "critical", "high":
+		return "high"
+	case "medium":
+		return "medium"
+	case "low":
+		return "low"
+	default:
+		return "medium"
+	}
+}
+
 func ExportedComputeTotals(families []FamilyCoverage) Totals {
 	return computeTotals(families)
 }
+// ToJSON serializes the CoverageMatrix to indented JSON.
 func (m *CoverageMatrix) ToJSON() ([]byte, error) {
 	return json.MarshalIndent(m, "", "  ")
 }

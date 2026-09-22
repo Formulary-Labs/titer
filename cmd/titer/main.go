@@ -95,7 +95,7 @@ func main() {
 	}
 
 	switch f {
-	case format.JSON, format.YAML:
+	case format.JSON:
 		data, err := matrix.ToJSON()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "encoding output: %v\n", err)
@@ -103,6 +103,9 @@ func main() {
 		}
 		os.Stdout.Write(data) //nolint:errcheck
 		fmt.Println()
+	case format.YAML:
+		fmt.Fprintln(os.Stderr, `{"error": "YAML format is not supported; use --format json, md, or csv", "code": 2}`)
+		os.Exit(exit.ToolError)
 	case format.MD:
 		fmt.Print(matrix.ToMarkdown())
 	case format.CSV:
