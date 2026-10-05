@@ -3,7 +3,7 @@ module github.com/Formulary-Labs/titer
 go 1.26.6
 
 require (
-	github.com/Formulary-Labs/substrate v0.4.0
+	github.com/Formulary-Labs/substrate v0.5.0
 	github.com/gemaraproj/go-gemara v0.10.0
 )
 
