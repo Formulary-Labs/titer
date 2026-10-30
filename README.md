@@ -6,9 +6,18 @@ How much of your control catalog actually has evidence behind it? `titer` comput
 go get github.com/Formulary-Labs/titer
 ```
 
+## In the ecosystem
+
+Formulary is a **pick-and-choose** suite of small, single-purpose CLIs. Install only the tools your workflow needs; each runs standalone. Shared contracts live in [`substrate`](https://github.com/Formulary-Labs/substrate). Optional Make pipelines (or an agent such as `regimen`) compose tools into a run — plug-and-play, not all-or-nothing.
+
+**This tool:** control coverage matrix and gap analysis.  
+**Works with:** `formula` (SoA optional), `exhibit` / `vital` (consumers).  
+**Pipeline stage:** packet.
+
+
 ## What it does
 
-`titer` reads a gemara `ControlCatalog` and an optional SOA CSV, then computes a `CoverageMatrix` — a structured snapshot of what is evidenced, implemented, gapped, or not applicable across every control family. The same computation works for any framework represented in the gemara schema: ISO 27001, ISO 42001, IEC 62443, or any custom catalog.
+`titer` reads an OSCAL catalog or a gemara `ControlCatalog` and an optional SOA CSV, then computes a `CoverageMatrix` — a structured snapshot of what is evidenced, implemented, gapped, or not applicable across every control family. The same computation works for any framework represented as OSCAL or gemara: ISO 27001, ISO 42001, IEC 62443, NIST SP 800-53, or a custom catalog.
 
 ## Usage
 
@@ -102,7 +111,7 @@ Produces a summary metrics block followed by a per-family table and the three ga
 
 ## Catalogs
 
-`titer` reads a gemara `ControlCatalog` YAML to compute the coverage matrix. See [CATALOGS.md](https://github.com/Formulary-Labs/.github/blob/main/CATALOGS.md) for known upstream catalog sources and guidance on authoring your own.
+`titer` reads an OSCAL catalog or a gemara `ControlCatalog` to compute the coverage matrix. See [CATALOGS.md](https://github.com/Formulary-Labs/.github/blob/main/CATALOGS.md) for known upstream catalog sources and guidance on authoring your own.
 
 ## Pipeline context
 
@@ -110,7 +119,17 @@ Produces a summary metrics block followed by a per-family table and the three ga
 
 ```bash
 titer --catalog catalog.yaml --soa output/soa.csv --program iso27001 > coverage.json
+
+# Gap severity filter
+titer --catalog catalog.yaml --soa output/soa.csv --severity high
+
+# FAIR ALE cross-reference: filter gaps to those with an annualized loss
+# exposure at or above a USD threshold, using a specimen register export
+titer --catalog catalog.yaml --soa output/soa.csv \
+  --risk-register risks-list.json --min-exposure-usd 50000
 ```
+
+Also available: `--owners` (JSON owner map `{control_id: owner}`) and `--quiet`. Output formats: `json` (default), `md`, `csv`.
 
 Output feeds `vital` (coverage health dimension), `exhibit` (coverage section), and `formula` (for SOA generation with gap annotations).
 
