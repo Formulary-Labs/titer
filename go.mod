@@ -1,6 +1,6 @@
 module github.com/Formulary-Labs/titer
 
-go 1.26.6
+go 1.26.11
 
 require (
 	github.com/Formulary-Labs/substrate v0.4.0
